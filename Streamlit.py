@@ -4,7 +4,7 @@ import requests
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables from .env files
 load_dotenv()
 
 # Get environment variables
