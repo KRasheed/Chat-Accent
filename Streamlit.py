@@ -4,7 +4,7 @@ import requests
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env files
+# Load environment variables from .env file
 load_dotenv()
 
 # Get environment variables
@@ -30,6 +30,10 @@ st.title("Accent Conversion with Streamlit and SageMaker")
 
 # File uploader for reference speaker
 uploaded_audio = st.file_uploader("Upload Audio for Accent Conversion (WAV)", type=["wav"])
+
+# Play the uploaded audio for listening before processing
+if uploaded_audio is not None:
+    st.audio(uploaded_audio, format="audio/wav")
 
 
 if st.button("Convert Accent"):
