@@ -87,7 +87,6 @@
 #                 st.error(f"Error invoking SageMaker endpoint: {str(e)}")
 #     else:
 #         st.error("Please upload an audio file.")
-
 import streamlit as st
 import boto3
 import os
@@ -133,8 +132,8 @@ def upload_to_s3(file, bucket_name, file_key):
         # Directly upload the file object (BytesIO) from Streamlit to S3
         s3_client.upload_fileobj(file, bucket_name, file_key)
         
-        # Generate the S3 URL
-        s3_url = f'https://{bucket_name}.s3.{aws_region}.amazonaws.com/{file_key}'
+        # Generate the S3 URL in the 's3://' format
+        s3_url = f's3://{bucket_name}/{file_key}'
         return s3_url
     except Exception as e:
         st.error(f"Failed to upload to S3: {str(e)}")
@@ -143,8 +142,8 @@ def upload_to_s3(file, bucket_name, file_key):
 
 if st.button("Convert Accent"):
     if uploaded_audio is not None:
-        # Define the S3 file key
-        s3_object_name = f"input-audio/{uploaded_audio.name}"  # S3 object name
+        # Define the S3 file key (this will be the path in the S3 bucket)
+        s3_object_name = f"input-audio/{uploaded_audio.name}"  # S3 object name (e.g., input-audio/segment_4_converted.wav)
         
         # Upload the file to S3
         with st.spinner("Uploading audio to S3..."):
@@ -153,9 +152,9 @@ if st.button("Convert Accent"):
         if s3_url:
             st.success(f"Audio uploaded to S3 at {s3_url}")
 
-            # Prepare the payload with the S3 URL
+            # Prepare the payload with the S3 URL in 's3://' format
             payload = {
-                'audio_url': s3_url
+                'audio_url': s3_url  # e.g., 's3://chataccent-v1/input-audio/segment_4_converted.wav'
             }
 
             # Send the payload to the SageMaker endpoint
@@ -199,9 +198,6 @@ if st.button("Convert Accent"):
                 except Exception as e:
                     st.error(f"Error invoking SageMaker endpoint: {str(e)}")
         else:
-            st.error("--------Failed to upload audio to S3.")
+            st.error("Failed to upload audio to S3.")
     else:
         st.error("Please upload an audio file.")
-
-
-
