@@ -169,8 +169,12 @@ if st.button("Convert Accent"):
                     # Read and clean the result from the response
                     result = response['Body'].read().decode('utf-8').strip()
 
+                    # If the result is wrapped in quotes, remove the quotes
+                    if result.startswith('"') and result.endswith('"'):
+                        result = result[1:-1]  # Strip the quotes
+
                     # Debugging: Display the cleaned response in the Streamlit app
-                    st.write("SageMaker Response:", result)
+                    st.write("SageMaker Response (cleaned):", result)
 
                     # Check if the response is a valid S3 URL
                     if result.startswith('s3://'):
