@@ -130,6 +130,10 @@ if uploaded_audio is not None:
 def upload_to_s3(file, bucket_name, object_name):
     """Uploads a file to the specified S3 bucket."""
     try:
+        # Reset the file's position to the beginning before uploading
+        file.seek(0)  # Ensure the file pointer is at the start
+        
+        # Upload file to S3
         s3_client.upload_fileobj(file, bucket_name, object_name)
         s3_url = f"s3://{bucket_name}/{object_name}"
         return s3_url
@@ -199,4 +203,3 @@ if st.button("Convert Accent"):
             st.error("Failed to upload audio to S3.")
     else:
         st.error("Please upload an audio file.")
-
