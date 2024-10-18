@@ -117,7 +117,7 @@ s3_client = boto3.client('s3',
                          aws_access_key_id=aws_access_key_id, 
                          aws_secret_access_key=aws_secret_access_key)
 
-st.title("Accent Conversion with Streamlit and SageMaker")
+st.title("Accent Conversion")
 
 # File uploader for reference speaker
 uploaded_audio = st.file_uploader("Upload Audio for Accent Conversion (WAV)", type=["wav"])
@@ -130,12 +130,18 @@ if uploaded_audio is not None:
 def upload_to_s3(file, bucket_name, file_key):
     """Uploads a file to the specified S3 bucket."""
     try:
+        # Ensure the temporary directory exists
+        temp_dir = "/tmp/input-audio/"
+        os.makedirs(temp_dir, exist_ok=True)
+        
         # Write the uploaded file to a temporary file and upload to S3
-        with open(f"/tmp/{file_key}", 'wb') as temp_file:
+        temp_file_path = os.path.join(temp_dir, file_key)
+        
+        with open(temp_file_path, 'wb') as temp_file:
             temp_file.write(file.read())
         
         # Now open the file from the temporary path and upload it to S3
-        with open(f"/tmp/{file_key}", 'rb') as audio_file:
+        with open(temp_file_path, 'rb') as audio_file:
             s3_client.upload_fileobj(audio_file, bucket_name, file_key)
         
         # Generate the S3 URL
@@ -204,6 +210,7 @@ if st.button("Convert Accent"):
                 except Exception as e:
                     st.error(f"Error invoking SageMaker endpoint: {str(e)}")
         else:
-            st.error("---------Failed to upload audio to S3.----------------")
+            st.error("Failed to upload audio to S3.")
     else:
         st.error("Please upload an audio file.")
+
