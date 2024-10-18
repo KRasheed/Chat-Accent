@@ -130,18 +130,8 @@ if uploaded_audio is not None:
 def upload_to_s3(file, bucket_name, file_key):
     """Uploads a file to the specified S3 bucket."""
     try:
-        # Ensure the temporary directory exists
-        temp_dir = "/tmp/"
-        
-        # Write the uploaded file to a temporary file
-        temp_file_path = os.path.join(temp_dir, os.path.basename(file_key))  # Save only the filename in /tmp
-        
-        with open(temp_file_path, 'wb') as temp_file:
-            temp_file.write(file.read())
-        
-        # Now open the file from the temporary path and upload it to S3
-        with open(temp_file_path, 'rb') as audio_file:
-            s3_client.upload_fileobj(audio_file, bucket_name, file_key)
+        # Directly upload the file object (BytesIO) from Streamlit to S3
+        s3_client.upload_fileobj(file, bucket_name, file_key)
         
         # Generate the S3 URL
         s3_url = f'https://{bucket_name}.s3.{aws_region}.amazonaws.com/{file_key}'
@@ -209,8 +199,9 @@ if st.button("Convert Accent"):
                 except Exception as e:
                     st.error(f"Error invoking SageMaker endpoint: {str(e)}")
         else:
-            st.error("Failed to upload audio to S3.")
+            st.error("--------Failed to upload audio to S3.")
     else:
         st.error("Please upload an audio file.")
+
 
 
