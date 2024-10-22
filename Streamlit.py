@@ -32,245 +32,90 @@ s3_client = boto3.client('s3',
                          aws_access_key_id=aws_access_key_id, 
                          aws_secret_access_key=aws_secret_access_key)
 
-# st.title("Accent Conversion with Streamlit and SageMaker")
+st.title("Accent Conversion with Streamlit and SageMaker")
 
-# # File uploader for audio files
-# uploaded_audio = st.file_uploader("Upload Audio for Accent Conversion (MP3, MP4, WAV)", type=["mp3", "mp4", "wav"])
+# File uploader for audio files
+uploaded_audio = st.file_uploader("Upload Audio for Accent Conversion (MP3, MP4, WAV)", type=["mp3", "mp4", "wav"])
 
-# # Play the uploaded audio for listening before processing
-# if uploaded_audio is not None:
-#     st.audio(uploaded_audio)
+# Play the uploaded audio for listening before processing
+if uploaded_audio is not None:
+    st.audio(uploaded_audio)
 
-# def convert_to_wav(uploaded_audio):
-#     # Create a temporary file to hold the converted WAV
-#     temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-
-#     # Check the MIME type and handle accordingly
-#     if uploaded_audio.type == "audio/mpeg":  # This is the correct MIME type for mp3
-#         audio = AudioSegment.from_mp3(uploaded_audio)
-#     elif uploaded_audio.type == "audio/mp4":
-#         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
-#     elif uploaded_audio.type == "audio/wav":
-#         return uploaded_audio  # No conversion needed for WAV
-#     else:
-#         st.error(f"Unsupported audio format: {uploaded_audio.type}")
-#         return None
-
-#     # Export audio to WAV
-#     audio.export(temp_wav_file.name, format="wav")
-    
-#     return temp_wav_file.name
-
-
-
-# def upload_to_s3(file_path, bucket_name, file_key):
-#     """Uploads a file to the specified S3 bucket."""
-#     try:
-#         with open(file_path, "rb") as file:
-#             s3_client.upload_fileobj(file, bucket_name, file_key)
-#         s3_url = f's3://{bucket_name}/{file_key}'
-#         return s3_url
-#     except Exception as e:
-#         st.error(f"Failed to upload to S3: {str(e)}")
-#         return None
-
-# accent = st.selectbox(
-#     "Select Accent:",
-#     ["British", "American"]
-# )
-
-# # Map the selected accent to the corresponding language code
-# language_mapping = {
-#     "British": "en-br",
-#     "American": "en-us"
-# }
-
-# language = language_mapping[accent]
-
-# if st.button("Convert Accent"):
-#     if uploaded_audio is not None:
-#         with st.spinner("Converting audio to WAV format..."):
-#             wav_audio_path = convert_to_wav(uploaded_audio)
-
-#         if wav_audio_path:
-#             s3_object_name = f"input-audio/{os.path.basename(wav_audio_path)}"
-
-#             with st.spinner("Uploading audio to S3..."):
-#                 s3_url = upload_to_s3(wav_audio_path, s3_bucket_name, s3_object_name)
-
-#             if s3_url:
-#                 st.success(f"Audio uploaded to S3 at {s3_url}")
-
-#                 # Create the JSON payload with both the audio URL and selected language
-#                 payload = {
-#                     "audio_url": s3_url,
-#                     "language": language
-#                 }
-
-#                 with st.spinner("Processing..."):
-#                     try:
-#                         # Invoke the SageMaker endpoint with the updated payload
-#                         response = client.invoke_endpoint(
-#                             EndpointName=endpoint_name,
-#                             ContentType='application/json',
-#                             Body=json.dumps(payload)
-#                         )
-
-#                         result = response['Body'].read().decode('utf-8').strip()
-
-#                         if result.startswith('"') and result.endswith('"'):
-#                             result = result[1:-1]
-
-#                         st.write("SageMaker Response (cleaned):", result)
-
-#                         if result.startswith('s3://'):
-#                             s3_url_parts = result.replace("s3://", "").split("/")
-#                             result_bucket_name = s3_url_parts[0]
-#                             result_object_key = "/".join(s3_url_parts[1:])
-
-#                             presigned_url = s3_client.generate_presigned_url(
-#                                 'get_object',
-#                                 Params={'Bucket': result_bucket_name, 'Key': result_object_key},
-#                                 ExpiresIn=3600
-#                             )
-
-#                             st.audio(presigned_url, format="audio/wav")
-#                             st.success("Audio conversion complete!")
-
-#                             audio_data = requests.get(presigned_url).content
-#                             st.download_button("Download Converted Audio", audio_data, file_name="converted_voice.wav")
-#                         else:
-#                             st.error("Invalid response format from SageMaker. Expected an S3 URL.")
-#                     except Exception as e:
-#                         st.error(f"Error invoking SageMaker endpoint: {str(e)}")
-#             else:
-#                 st.error("Failed to upload audio to S3.")
-#         else:
-#             st.error("Failed to convert audio to WAV.")
-#     else:
-#         st.error("Please upload an audio file.")
-is_recording = False
-recording_data = None
-def get_default_input_device():
-    devices = sd.query_devices()
-    input_devices = [device for device in devices if device['max_input_channels'] > 0]
-    
-    if input_devices:
-        sd.default.device = input_devices[0]['name']
-        st.write(f"Using input device: {input_devices[0]['name']}")
-        return True
-    else:
-        st.error("No input devices found.")
-        return False
-
-# Function to start recording audio
-def start_recording(sample_rate=44100):
-    global is_recording, recording_data
-    if get_default_input_device():
-        is_recording = True
-        st.write("Recording... Click Stop Recording to finish.")
-        recording_data = sd.rec(int(30 * sample_rate), samplerate=sample_rate, channels=1, dtype='int16')
-        sd.wait()  # Recording for a max of 30 seconds
-        return recording_data, sample_rate
-    return None, None
-
-# Function to stop recording audio
-def stop_recording():
-    global is_recording
-    if is_recording:
-        sd.stop()
-        is_recording = False
-        st.success("Recording stopped.")
-
-# Function to save audio recording to a file
-def save_audio(filename, recording, sample_rate):
-    wavio.write(filename, recording, sample_rate, sampwidth=2)  # Save as WAV file
-
-# Function to upload audio to S3
-def upload_to_s3(file_path, bucket_name, object_name):
-    try:
-        s3_client.upload_file(file_path, bucket_name, object_name)
-        s3_url = f"s3://{bucket_name}/{object_name}"
-        return s3_url
-    except Exception as e:
-        st.error(f"Error uploading to S3: {str(e)}")
-        return None
-
-# Function to convert uploaded audio to WAV format
 def convert_to_wav(uploaded_audio):
-    if uploaded_audio.type == "audio/wav":
-        return uploaded_audio
-    elif uploaded_audio.type == "audio/mp3":
+    # Create a temporary file to hold the converted WAV
+    temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+
+    # Check the MIME type and handle accordingly
+    if uploaded_audio.type == "audio/mpeg":  # This is the correct MIME type for mp3
         audio = AudioSegment.from_mp3(uploaded_audio)
     elif uploaded_audio.type == "audio/mp4":
         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
+    elif uploaded_audio.type == "audio/wav":
+        return uploaded_audio  # No conversion needed for WAV
     else:
-        st.error("Unsupported audio format")
+        st.error(f"Unsupported audio format: {uploaded_audio.type}")
         return None
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav_file:
-        audio.export(temp_wav_file.name, format="wav")
-        return temp_wav_file.name
-
-# Streamlit app layout
-st.title("Accent Conversion Application")
-
-# Audio input method selection
-audio_option = st.radio("Choose how to provide the audio:", ("Upload Audio File", "Record Audio"))
-
-uploaded_audio = None
-if audio_option == "Upload Audio File":
-    uploaded_audio = st.file_uploader("Upload an audio file", type=["mp3", "wav", "mp4"])
-elif audio_option == "Record Audio":
-    if st.button("Start Recording"):
-        recording_data, sample_rate = start_recording()
+    # Export audio to WAV
+    audio.export(temp_wav_file.name, format="wav")
     
-    if st.button("Stop Recording"):
-        stop_recording()
-        save_audio("recorded_audio.wav", recording_data, sample_rate)
-        st.audio("recorded_audio.wav", format="audio/wav")
-        uploaded_audio = "recorded_audio.wav"
+    return temp_wav_file.name
 
-# Language selection dropdown
-language = st.selectbox("Select Accent", options=["British", "American"])
 
-# Map selected accent to the corresponding language code
-language_code = "en-br" if language == "British" else "en-us"
 
-# Button to convert the accent
+def upload_to_s3(file_path, bucket_name, file_key):
+    """Uploads a file to the specified S3 bucket."""
+    try:
+        with open(file_path, "rb") as file:
+            s3_client.upload_fileobj(file, bucket_name, file_key)
+        s3_url = f's3://{bucket_name}/{file_key}'
+        return s3_url
+    except Exception as e:
+        st.error(f"Failed to upload to S3: {str(e)}")
+        return None
+
+accent = st.selectbox(
+    "Select Accent:",
+    ["British", "American"]
+)
+
+# Map the selected accent to the corresponding language code
+language_mapping = {
+    "British": "en-br",
+    "American": "en-us"
+}
+
+language = language_mapping[accent]
+
 if st.button("Convert Accent"):
     if uploaded_audio is not None:
-        if audio_option == "Upload Audio File" and uploaded_audio is not None:
-            with st.spinner("Converting uploaded audio to WAV format..."):
-                wav_audio_path = convert_to_wav(uploaded_audio)
-        elif audio_option == "Record Audio" and uploaded_audio is not None:
-            with st.spinner("Saving recorded audio..."):
-                wav_audio_path = uploaded_audio  # recorded_audio.wav is saved earlier
+        with st.spinner("Converting audio to WAV format..."):
+            wav_audio_path = convert_to_wav(uploaded_audio)
 
         if wav_audio_path:
             s3_object_name = f"input-audio/{os.path.basename(wav_audio_path)}"
+
             with st.spinner("Uploading audio to S3..."):
                 s3_url = upload_to_s3(wav_audio_path, s3_bucket_name, s3_object_name)
 
             if s3_url:
                 st.success(f"Audio uploaded to S3 at {s3_url}")
 
-                # Create payload with both audio URL and language code
+                # Create the JSON payload with both the audio URL and selected language
                 payload = {
-                    'audio_url': s3_url,
-                    'language': language_code
+                    "audio_url": s3_url,
+                    "language": language
                 }
 
                 with st.spinner("Processing..."):
                     try:
-                        # Invoke SageMaker endpoint
+                        # Invoke the SageMaker endpoint with the updated payload
                         response = client.invoke_endpoint(
                             EndpointName=endpoint_name,
                             ContentType='application/json',
                             Body=json.dumps(payload)
                         )
 
-                        # Process and clean up the response
                         result = response['Body'].read().decode('utf-8').strip()
 
                         if result.startswith('"') and result.endswith('"'):
@@ -283,7 +128,6 @@ if st.button("Convert Accent"):
                             result_bucket_name = s3_url_parts[0]
                             result_object_key = "/".join(s3_url_parts[1:])
 
-                            # Generate a presigned URL to play and download the converted audio
                             presigned_url = s3_client.generate_presigned_url(
                                 'get_object',
                                 Params={'Bucket': result_bucket_name, 'Key': result_object_key},
@@ -293,7 +137,6 @@ if st.button("Convert Accent"):
                             st.audio(presigned_url, format="audio/wav")
                             st.success("Audio conversion complete!")
 
-                            # Provide a download button for the converted audio
                             audio_data = requests.get(presigned_url).content
                             st.download_button("Download Converted Audio", audio_data, file_name="converted_voice.wav")
                         else:
@@ -305,4 +148,161 @@ if st.button("Convert Accent"):
         else:
             st.error("Failed to convert audio to WAV.")
     else:
-        st.error("Please upload or record an audio file.")
+        st.error("Please upload an audio file.")
+# is_recording = False
+# recording_data = None
+# def get_default_input_device():
+#     devices = sd.query_devices()
+#     input_devices = [device for device in devices if device['max_input_channels'] > 0]
+    
+#     if input_devices:
+#         sd.default.device = input_devices[0]['name']
+#         st.write(f"Using input device: {input_devices[0]['name']}")
+#         return True
+#     else:
+#         st.error("No input devices found.")
+#         return False
+
+# # Function to start recording audio
+# def start_recording(sample_rate=44100):
+#     global is_recording, recording_data
+#     if get_default_input_device():
+#         is_recording = True
+#         st.write("Recording... Click Stop Recording to finish.")
+#         recording_data = sd.rec(int(30 * sample_rate), samplerate=sample_rate, channels=1, dtype='int16')
+#         sd.wait()  # Recording for a max of 30 seconds
+#         return recording_data, sample_rate
+#     return None, None
+
+# # Function to stop recording audio
+# def stop_recording():
+#     global is_recording
+#     if is_recording:
+#         sd.stop()
+#         is_recording = False
+#         st.success("Recording stopped.")
+
+# # Function to save audio recording to a file
+# def save_audio(filename, recording, sample_rate):
+#     wavio.write(filename, recording, sample_rate, sampwidth=2)  # Save as WAV file
+
+# # Function to upload audio to S3
+# def upload_to_s3(file_path, bucket_name, object_name):
+#     try:
+#         s3_client.upload_file(file_path, bucket_name, object_name)
+#         s3_url = f"s3://{bucket_name}/{object_name}"
+#         return s3_url
+#     except Exception as e:
+#         st.error(f"Error uploading to S3: {str(e)}")
+#         return None
+
+# # Function to convert uploaded audio to WAV format
+# def convert_to_wav(uploaded_audio):
+#     if uploaded_audio.type == "audio/wav":
+#         return uploaded_audio
+#     elif uploaded_audio.type == "audio/mp3":
+#         audio = AudioSegment.from_mp3(uploaded_audio)
+#     elif uploaded_audio.type == "audio/mp4":
+#         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
+#     else:
+#         st.error("Unsupported audio format")
+#         return None
+
+#     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav_file:
+#         audio.export(temp_wav_file.name, format="wav")
+#         return temp_wav_file.name
+
+# # Streamlit app layout
+# st.title("Accent Conversion Application")
+
+# # Audio input method selection
+# audio_option = st.radio("Choose how to provide the audio:", ("Upload Audio File", "Record Audio"))
+
+# uploaded_audio = None
+# if audio_option == "Upload Audio File":
+#     uploaded_audio = st.file_uploader("Upload an audio file", type=["mp3", "wav", "mp4"])
+# elif audio_option == "Record Audio":
+#     if st.button("Start Recording"):
+#         recording_data, sample_rate = start_recording()
+    
+#     if st.button("Stop Recording"):
+#         stop_recording()
+#         save_audio("recorded_audio.wav", recording_data, sample_rate)
+#         st.audio("recorded_audio.wav", format="audio/wav")
+#         uploaded_audio = "recorded_audio.wav"
+
+# # Language selection dropdown
+# language = st.selectbox("Select Accent", options=["British", "American"])
+
+# # Map selected accent to the corresponding language code
+# language_code = "en-br" if language == "British" else "en-us"
+
+# # Button to convert the accent
+# if st.button("Convert Accent"):
+#     if uploaded_audio is not None:
+#         if audio_option == "Upload Audio File" and uploaded_audio is not None:
+#             with st.spinner("Converting uploaded audio to WAV format..."):
+#                 wav_audio_path = convert_to_wav(uploaded_audio)
+#         elif audio_option == "Record Audio" and uploaded_audio is not None:
+#             with st.spinner("Saving recorded audio..."):
+#                 wav_audio_path = uploaded_audio  # recorded_audio.wav is saved earlier
+
+#         if wav_audio_path:
+#             s3_object_name = f"input-audio/{os.path.basename(wav_audio_path)}"
+#             with st.spinner("Uploading audio to S3..."):
+#                 s3_url = upload_to_s3(wav_audio_path, s3_bucket_name, s3_object_name)
+
+#             if s3_url:
+#                 st.success(f"Audio uploaded to S3 at {s3_url}")
+
+#                 # Create payload with both audio URL and language code
+#                 payload = {
+#                     'audio_url': s3_url,
+#                     'language': language_code
+#                 }
+
+#                 with st.spinner("Processing..."):
+#                     try:
+#                         # Invoke SageMaker endpoint
+#                         response = client.invoke_endpoint(
+#                             EndpointName=endpoint_name,
+#                             ContentType='application/json',
+#                             Body=json.dumps(payload)
+#                         )
+
+#                         # Process and clean up the response
+#                         result = response['Body'].read().decode('utf-8').strip()
+
+#                         if result.startswith('"') and result.endswith('"'):
+#                             result = result[1:-1]
+
+#                         st.write("SageMaker Response (cleaned):", result)
+
+#                         if result.startswith('s3://'):
+#                             s3_url_parts = result.replace("s3://", "").split("/")
+#                             result_bucket_name = s3_url_parts[0]
+#                             result_object_key = "/".join(s3_url_parts[1:])
+
+#                             # Generate a presigned URL to play and download the converted audio
+#                             presigned_url = s3_client.generate_presigned_url(
+#                                 'get_object',
+#                                 Params={'Bucket': result_bucket_name, 'Key': result_object_key},
+#                                 ExpiresIn=3600
+#                             )
+
+#                             st.audio(presigned_url, format="audio/wav")
+#                             st.success("Audio conversion complete!")
+
+#                             # Provide a download button for the converted audio
+#                             audio_data = requests.get(presigned_url).content
+#                             st.download_button("Download Converted Audio", audio_data, file_name="converted_voice.wav")
+#                         else:
+#                             st.error("Invalid response format from SageMaker. Expected an S3 URL.")
+#                     except Exception as e:
+#                         st.error(f"Error invoking SageMaker endpoint: {str(e)}")
+#             else:
+#                 st.error("Failed to upload audio to S3.")
+#         else:
+#             st.error("Failed to convert audio to WAV.")
+#     else:
+#         st.error("Please upload or record an audio file.")
