@@ -124,7 +124,7 @@ import json
 import tempfile
 from dotenv import load_dotenv
 import requests
-from pydub import AudioSegment  # For audio conversion
+from pydub import AudioSegment 
 
 # Load environment variables from .env file
 load_dotenv()
@@ -158,17 +158,25 @@ if uploaded_audio is not None:
     st.audio(uploaded_audio)
 
 def convert_to_wav(uploaded_audio):
-    """Convert uploaded MP3 or MP4 file to WAV format."""
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav_file:
-        if uploaded_audio.type == "audio/mp3":
-            audio = AudioSegment.from_mp3(uploaded_audio)
-        elif uploaded_audio.type == "audio/mp4" or uploaded_audio.type == "video/mp4":
-            audio = AudioSegment.from_file(uploaded_audio, format="mp4")
-        elif uploaded_audio.type == "audio/wav":
-            return uploaded_audio  # No conversion needed for WAV
-        
-        audio.export(temp_wav_file.name, format="wav")
-        return temp_wav_file.name
+    # Create a temporary file to hold the converted WAV
+    temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+
+    # Convert non-WAV formats to WAV
+    if uploaded_audio.type == "audio/mp3":
+        audio = AudioSegment.from_mp3(uploaded_audio)
+    elif uploaded_audio.type == "audio/mp4":
+        audio = AudioSegment.from_file(uploaded_audio, format="mp4")
+    elif uploaded_audio.type == "audio/wav":
+        return uploaded_audio  # No conversion needed for WAV
+    else:
+        st.error(f"Unsupported audio format: {uploaded_audio.type}")
+        return None
+
+    # Export audio to WAV
+    audio.export(temp_wav_file.name, format="wav")
+    
+    return temp_wav_file.name
+
 
 def upload_to_s3(file_path, bucket_name, file_key):
     """Uploads a file to the specified S3 bucket."""
