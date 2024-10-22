@@ -41,25 +41,25 @@ s3_client = boto3.client('s3',
 # if uploaded_audio is not None:
 #     st.audio(uploaded_audio)
 
-def convert_to_wav(uploaded_audio):
-    # Create a temporary file to hold the converted WAV
-    temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+# def convert_to_wav(uploaded_audio):
+#     # Create a temporary file to hold the converted WAV
+#     temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
 
-    # Check the MIME type and handle accordingly
-    if uploaded_audio.type == "audio/mpeg":  # This is the correct MIME type for mp3
-        audio = AudioSegment.from_mp3(uploaded_audio)
-    elif uploaded_audio.type == "audio/mp4":
-        audio = AudioSegment.from_file(uploaded_audio, format="mp4")
-    elif uploaded_audio.type == "audio/wav":
-        return uploaded_audio  # No conversion needed for WAV
-    else:
-        st.error(f"Unsupported audio format: {uploaded_audio.type}")
-        return None
+#     # Check the MIME type and handle accordingly
+#     if uploaded_audio.type == "audio/mpeg":  # This is the correct MIME type for mp3
+#         audio = AudioSegment.from_mp3(uploaded_audio)
+#     elif uploaded_audio.type == "audio/mp4":
+#         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
+#     elif uploaded_audio.type == "audio/wav":
+#         return uploaded_audio  # No conversion needed for WAV
+#     else:
+#         st.error(f"Unsupported audio format: {uploaded_audio.type}")
+#         return None
 
-    # Export audio to WAV
-    audio.export(temp_wav_file.name, format="wav")
+#     # Export audio to WAV
+#     audio.export(temp_wav_file.name, format="wav")
     
-    return temp_wav_file.name
+#     return temp_wav_file.name
 
 
 
@@ -186,24 +186,25 @@ def upload_to_s3(file_path, bucket_name, object_name):
         st.error(f"Error uploading to S3: {str(e)}")
         return None
 
-# # Function to convert uploaded audio to WAV format
-# def convert_to_wav(uploaded_audio):
-#     temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+from pydub import AudioSegment
 
-#     if uploaded_audio.type == "audio/mpeg":
-#         audio = AudioSegment.from_mp3(uploaded_audio)
-#     elif uploaded_audio.type == "audio/mp4":
-#         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
-#     elif uploaded_audio.type == "audio/wav":
-#         return uploaded_audio
-#     else:
-#         st.error(f"Unsupported audio format: {uploaded_audio.type}")
-#         return None
+def convert_to_wav(uploaded_audio):
+    # First, check the file type and load the audio accordingly
+    if uploaded_audio.type == "audio/wav":
+        return uploaded_audio  # No conversion needed for WAV
+    elif uploaded_audio.type == "audio/mp3":
+        audio = AudioSegment.from_mp3(uploaded_audio)
+    elif uploaded_audio.type == "audio/mp4":
+        audio = AudioSegment.from_file(uploaded_audio, format="mp4")
+    else:
+        st.error("Unsupported audio format")
+        return None
 
-#     audio.export(temp_wav_file.name, format="wav")
-#     return temp_wav_file.name
+    # Export to WAV format
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav_file:
+        audio.export(temp_wav_file.name, format="wav")
+        return temp_wav_file.name
 
-# Streamlit app logic
 st.title("Accent Conversion Application")
 
 # Audio input method selection
