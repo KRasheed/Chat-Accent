@@ -1,6 +1,4 @@
 streamlit
-sounddevice
-wavio
 pydub
 boto3
 requests
