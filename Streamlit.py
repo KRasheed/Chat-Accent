@@ -161,8 +161,8 @@ def convert_to_wav(uploaded_audio):
     # Create a temporary file to hold the converted WAV
     temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
 
-    # Convert non-WAV formats to WAV
-    if uploaded_audio.type == "audio/mp3":
+    # Check the MIME type and handle accordingly
+    if uploaded_audio.type == "audio/mpeg":  # This is the correct MIME type for mp3
         audio = AudioSegment.from_mp3(uploaded_audio)
     elif uploaded_audio.type == "audio/mp4":
         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
@@ -176,6 +176,7 @@ def convert_to_wav(uploaded_audio):
     audio.export(temp_wav_file.name, format="wav")
     
     return temp_wav_file.name
+
 
 
 def upload_to_s3(file_path, bucket_name, file_key):
