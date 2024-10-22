@@ -40,27 +40,27 @@ if uploaded_audio is not None:
     st.audio(uploaded_audio)
 
 def convert_to_wav(uploaded_audio):
-    # Create a temporary file to hold the converted WAV
+    # Create a temporary file to hold the WAV file
     temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-
+    
     # Check the MIME type and handle accordingly
-    if uploaded_audio.type == "audio/mpeg":  # This is the correct MIME type for mp3
+    if uploaded_audio.type == "audio/wav":  # WAV file, no conversion needed
+        with open(temp_wav_file.name, 'wb') as f:
+            f.write(uploaded_audio.read())  # Save the uploaded WAV file
+        return temp_wav_file.name
+    elif uploaded_audio.type == "audio/mpeg":  # MP3 file
         audio = AudioSegment.from_mp3(uploaded_audio)
-    elif uploaded_audio.type == "audio/mp4":
+    elif uploaded_audio.type == "audio/mp4":  # MP4 file
         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
-    elif uploaded_audio.type == "audio/wav":
-        # Save the uploaded file directly to a temp file
-        with open(temp_wav_file.name, "wb") as f:
-            f.write(uploaded_audio.read())
-        return temp_wav_file.name  # No conversion needed for WAV
     else:
         st.error(f"Unsupported audio format: {uploaded_audio.type}")
         return None
 
-    # Export audio to WAV
+    # Export audio to WAV format if conversion is needed
     audio.export(temp_wav_file.name, format="wav")
     
     return temp_wav_file.name
+
 
 def upload_to_s3(file_path, bucket_name, file_key):
     """Uploads a file to the specified S3 bucket."""
