@@ -7,6 +7,7 @@ import boto3
 import requests
 import json
 from pydub import AudioSegment
+from dotenv import load_dotenv
 
 
 # Load environment variables from .env file
