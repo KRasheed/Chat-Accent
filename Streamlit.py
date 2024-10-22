@@ -1,6 +1,4 @@
 import streamlit as st
-# import sounddevice as sd
-# import wavio
 import tempfile
 import os
 import boto3
@@ -51,7 +49,10 @@ def convert_to_wav(uploaded_audio):
     elif uploaded_audio.type == "audio/mp4":
         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
     elif uploaded_audio.type == "audio/wav":
-        return uploaded_audio  # No conversion needed for WAV
+        # Save the uploaded file directly to a temp file
+        with open(temp_wav_file.name, "wb") as f:
+            f.write(uploaded_audio.read())
+        return temp_wav_file.name  # No conversion needed for WAV
     else:
         st.error(f"Unsupported audio format: {uploaded_audio.type}")
         return None
@@ -60,8 +61,6 @@ def convert_to_wav(uploaded_audio):
     audio.export(temp_wav_file.name, format="wav")
     
     return temp_wav_file.name
-
-
 
 def upload_to_s3(file_path, bucket_name, file_key):
     """Uploads a file to the specified S3 bucket."""
