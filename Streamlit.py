@@ -194,7 +194,15 @@ uploaded_audio = None
 
 # Step 2: Show the audio recorder or file uploader based on the user's choice
 if choice == "Record Audio":
-    audio = audiorecorder("Click to record", "Click to stop recording")
+    # st.info("Click 'Start recording' to begin and 'Stop recording' to end.")  # Provide instructions
+
+    # Use the audiorecorder function with prompts and visualizer
+    audio = audiorecorder(
+        start_prompt="Start recording", 
+        stop_prompt="Stop recording", 
+        pause_prompt="", 
+        show_visualizer=True
+    )
     if len(audio) > 0:
         st.audio(audio.export().read(), format="audio/wav")  # Play back the recorded audio
         # Save the recorded audio as a WAV file
