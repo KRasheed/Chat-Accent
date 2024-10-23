@@ -212,24 +212,47 @@ elif choice == "Upload Audio":
         st.audio(uploaded_audio)  # Play back the uploaded audio
 
 # Helper function to convert uploaded audio to WAV if needed
+# def convert_to_wav(uploaded_audio):
+#     temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+    
+#     if uploaded_audio.type == "audio/wav":
+#         with open(temp_wav_file.name, 'wb') as f:
+#             f.write(uploaded_audio.read())  # Save the uploaded WAV file
+#         return temp_wav_file.name
+#     elif uploaded_audio.type == "audio/mpeg":
+#         audio = AudioSegment.from_mp3(uploaded_audio)
+#     elif uploaded_audio.type == "audio/mp4":
+#         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
+#     else:
+#         st.error(f"Unsupported audio format: {uploaded_audio.type}")
+#         return None
+
+#     audio.export(temp_wav_file.name, format="wav")
+    
+#     return temp_wav_file.name
+
 def convert_to_wav(uploaded_audio):
     temp_wav_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
     
+    # Check the MIME type and handle the conversion based on the format
     if uploaded_audio.type == "audio/wav":
         with open(temp_wav_file.name, 'wb') as f:
             f.write(uploaded_audio.read())  # Save the uploaded WAV file
         return temp_wav_file.name
     elif uploaded_audio.type == "audio/mpeg":
         audio = AudioSegment.from_mp3(uploaded_audio)
-    elif uploaded_audio.type == "audio/mp4":
+    elif uploaded_audio.type == "video/mp4" or uploaded_audio.type == "audio/mp4":
+        # Extract the audio from the .mp4 file
         audio = AudioSegment.from_file(uploaded_audio, format="mp4")
     else:
         st.error(f"Unsupported audio format: {uploaded_audio.type}")
         return None
 
+    # Export the audio to WAV format
     audio.export(temp_wav_file.name, format="wav")
     
     return temp_wav_file.name
+
 
 def upload_to_s3(file_path, bucket_name, file_key):
     """Uploads a file to the specified S3 bucket."""
