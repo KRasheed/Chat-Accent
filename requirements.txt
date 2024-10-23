@@ -2,3 +2,4 @@ streamlit
 pydub
 boto3
 requests
+git+https://github.com/stefanrmmr/streamlit-audiorec.git
