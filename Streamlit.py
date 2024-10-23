@@ -157,7 +157,7 @@ import requests
 import json
 from pydub import AudioSegment
 from dotenv import load_dotenv
-from audiorecorder import audiorecorder  # Import the new audio recorder component
+from audiorecorder import audiorecorder  
 
 # Load environment variables from .env file
 load_dotenv()
@@ -194,7 +194,7 @@ uploaded_audio = None
 
 # Step 2: Show the audio recorder or file uploader based on the user's choice
 if choice == "Record Audio":
-    # st.info("Click 'Start recording' to begin and 'Stop recording' to end.")  # Provide instructions
+    st.info("Click 'Start recording' to begin and 'Stop recording' to end.")  # Provide instructions
 
     # Use the audiorecorder function with prompts and visualizer
     audio = audiorecorder(
