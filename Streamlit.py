@@ -157,7 +157,7 @@ import requests
 import json
 from pydub import AudioSegment
 from dotenv import load_dotenv
-from st_audiorec import st_audiorec  # Import the audio recorder component
+from audiorecorder import audiorecorder  # Import the new audio recorder component
 
 # Load environment variables from .env file
 load_dotenv()
@@ -189,14 +189,18 @@ st.header("Record or Upload Audio")
 choice = st.radio("Choose how to provide audio:", ("Record Audio", "Upload Audio"))
 
 # Initialize variables to store the audio data
-wav_audio_data = None
+audio = None
 uploaded_audio = None
 
 # Step 2: Show the audio recorder or file uploader based on the user's choice
 if choice == "Record Audio":
-    wav_audio_data = st_audiorec()  # Use the audio recorder
-    if wav_audio_data is not None:
-        st.audio(wav_audio_data, format='audio/wav')  # Play back the recorded audio
+    audio = audiorecorder("Click to record", "Click to stop recording")
+    if len(audio) > 0:
+        st.audio(audio.export().read(), format="audio/wav")  # Play back the recorded audio
+        # Save the recorded audio as a WAV file
+        audio.export("recorded_audio.wav", format="wav")
+        st.success("Audio recorded successfully.")
+
 elif choice == "Upload Audio":
     uploaded_audio = st.file_uploader("Upload Audio for Accent Conversion (MP3, MP4, WAV)", type=["mp3", "mp4", "wav"])
     if uploaded_audio is not None:
@@ -249,12 +253,10 @@ language = language_mapping[accent]
 
 # Conversion button and logic
 if st.button("Convert Accent"):
-    if uploaded_audio is not None or wav_audio_data is not None:
-        if wav_audio_data is not None:
+    if uploaded_audio is not None or audio is not None:
+        if audio is not None:
             # Save the recorded audio as a WAV file
-            wav_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name
-            with open(wav_audio_path, 'wb') as f:
-                f.write(wav_audio_data)  # Save the recorded audio data
+            wav_audio_path = "recorded_audio.wav"
 
         elif uploaded_audio is not None:
             with st.spinner("Converting audio to WAV format..."):
