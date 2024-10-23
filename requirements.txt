@@ -2,5 +2,5 @@ streamlit
 pydub
 boto3
 requests
-streamlit-audiorec
+streamlit-audiorecorder
 
