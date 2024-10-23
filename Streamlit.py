@@ -181,12 +181,9 @@ s3_client = boto3.client('s3',
                          aws_access_key_id=aws_access_key_id, 
                          aws_secret_access_key=aws_secret_access_key)
 
-st.title("Accent Conversion with Streamlit and SageMaker")
+st.title("Accent Conversion Application")
 
-# Step 1: Ask the user to choose between recording or uploading
-st.header("Record or Upload Audio")
-
-choice = st.radio("Choose how to provide audio:", ("Record Audio", "Upload Audio"))
+choice = st.radio("Record your voice here or Upload your audio:", ("Record Audio", "Upload Audio"))
 
 # Initialize variables to store the audio data
 audio = None
@@ -273,11 +270,11 @@ if st.button("Convert Accent"):
         if wav_audio_path:
             s3_object_name = f"input-audio/{os.path.basename(wav_audio_path)}"
 
-            with st.spinner("Uploading audio to S3..."):
+            with st.spinner("Uploading audio..."):
                 s3_url = upload_to_s3(wav_audio_path, s3_bucket_name, s3_object_name)
 
             if s3_url:
-                st.success(f"Audio uploaded to S3 at {s3_url}")
+                st.success(f"Audio uploaded.")
 
                 # Create the JSON payload with both the audio URL and selected language
                 payload = {
@@ -299,7 +296,7 @@ if st.button("Convert Accent"):
                         if result.startswith('"') and result.endswith('"'):
                             result = result[1:-1]
 
-                        st.write("SageMaker Response (cleaned):", result)
+                        st.write("Converted audio:", result)
 
                         if result.startswith('s3://'):
                             s3_url_parts = result.replace("s3://", "").split("/")
