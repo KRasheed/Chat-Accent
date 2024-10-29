@@ -3,4 +3,5 @@ pydub
 boto3
 requests
 streamlit-audiorecorder
+python-dotenv
 
